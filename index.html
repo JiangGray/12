@@ -113,14 +113,15 @@ const piecesDef={
   C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
   X:{name:"象",moves:[[1,1],[1,-1],[-1,1],[-1,-1]]},
   B:{name:"兵",moves:[[1,0]]},
-  G:{name:"咪",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
+  G:{name:"雞",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
 };
 let boardState,history=[];
 
+// cloneState 儲存下一回合玩家
 function cloneState(){ 
   return { 
     board: JSON.parse(JSON.stringify(boardState)), 
-    player: currentPlayer, 
+    nextPlayer: currentPlayer===1?2:1,
     capturedP1: capturedP1.innerHTML, 
     capturedP2: capturedP2.innerHTML 
   }; 
@@ -132,8 +133,8 @@ function restoreState(state){
   capturedP2.innerHTML=state.capturedP2;
   selected=null; isDropMode=false;
 
-  // 修正悔棋後玩家順序
-  currentPlayer = state.player===1 ? 2 : 1;
+  // 恢復下一回合玩家
+  currentPlayer = state.nextPlayer;
 
   renderBoard();
 }
