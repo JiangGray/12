@@ -38,14 +38,14 @@ button {
 #resetBtn { background:#ffcc66; } #resetBtn:hover { background:#ffaa33; }
 #undoBtn { background:#99ccff; } #undoBtn:hover { background:#66aaff; }
 
-#game { display:flex; gap:10px; flex-wrap:nowrap; justify-content:center; position:relative; z-index:1; }
+#game { display:flex; gap:10px; justify-content:center; position:relative; z-index:1; }
 .board-container {
-  display:grid; grid-template-columns:repeat(3, minmax(60px,80px));
-  grid-template-rows:repeat(4, minmax(60px,80px));
+  display:grid; grid-template-columns:repeat(3, 80px);
+  grid-template-rows:repeat(4, 80px);
   gap:2px; background:#333; padding:5px; border-radius:10px; position:relative;
 }
 .cell {
-  width:100%; aspect-ratio:1/1; background: rgba(255,255,255,0.7);
+  width:80px; height:80px; background: rgba(255,255,255,0.7);
   display:flex; justify-content:center; align-items:center;
   font-size:18px; border-radius:8px; position:relative;
 }
@@ -54,11 +54,11 @@ button {
   border-radius:8px; font-weight:bold; cursor:pointer;
 }
 .p1 { background:#ff9999; } .p2 { background:#9999ff; }
-.inactive { opacity:0.4; } .highlight { outline:3px solid yellow; }
+.highlight { outline:3px solid yellow; }
 #capturedP1, #capturedP2 { display:flex; flex-direction:column; gap:5px; }
 
 @media (max-width:600px){
-  .board-container { grid-template-columns:repeat(3,minmax(50px,70px)); grid-template-rows:repeat(4,minmax(50px,70px)); }
+  .board-container { grid-template-columns:repeat(3,60px); grid-template-rows:repeat(4,60px); }
   .cell{ font-size:16px; } .piece{ font-size:14px; }
   #turnIndicator{ font-size:18px; } button{ padding:10px 16px; font-size:16px; }
 }
@@ -184,24 +184,24 @@ board.addEventListener("click",e=>{
 
   let piece=boardState[r][c];
   if(piece && piece.player===currentPlayer){
-    selected=piece;selected.row=r;selected.col=c;
+    selected=piece; selected.row=r; selected.col=c;
     showMoves(r,c,piece);
   } else if(cell.classList.contains("highlight")){
     let target = boardState[r][c];
     if(target){
-        if(target.type === "J"){
-            alert(`玩家${currentPlayer}獲勝!`);
-        }
-        addCaptured({...target, player:currentPlayer});
+      if(target.type === "J"){
+        alert(`玩家${currentPlayer}獲勝!`);
+      }
+      addCaptured({...target, player:currentPlayer});
     }
 
     boardState[r][c] = selected;
     boardState[selected.row][selected.col] = null;
 
     if(selected.type === "B"){
-        if((selected.player===1 && r===0) || (selected.player===2 && r===rows-1)){
-            boardState[r][c].type = "G";
-        }
+      if((selected.player===1 && r===0) || (selected.player===2 && r===rows-1)){
+        boardState[r][c].type = "G";
+      }
     }
 
     history.push(cloneState());
@@ -210,29 +210,29 @@ board.addEventListener("click",e=>{
 });
 
 function addCaptured(piece){
-    if(piece.type==="G") piece.type="B";
-    const div = document.createElement("div");
-    div.className = `piece p${piece.player}`;
-    div.textContent = piecesDef[piece.type].name;
-    div.dataset.player = piece.player;
-    div.dataset.type = piece.type;
-    div.onclick = ()=>{
-        if(piece.player===currentPlayer){
-            selected = {player: piece.player, type: piece.type, element: div};
-            isDropMode = true;
-            showDropPositions(currentPlayer);
-        }
-    };
-    if(piece.player===1) capturedP1.appendChild(div);
-    else capturedP2.appendChild(div);
+  if(piece.type==="G") piece.type="B";
+  const div = document.createElement("div");
+  div.className = `piece p${piece.player}`;
+  div.textContent = piecesDef[piece.type].name;
+  div.dataset.player = piece.player;
+  div.dataset.type = piece.type;
+  div.onclick = ()=>{
+    if(piece.player===currentPlayer){
+      selected = {player: piece.player, type: piece.type, element: div};
+      isDropMode = true;
+      showDropPositions(currentPlayer);
+    }
+  };
+  if(piece.player===1) capturedP1.appendChild(div);
+  else capturedP2.appendChild(div);
 }
 
 resetBtn.onclick = ()=>{ initBoard(); renderBoard(); };
 undoBtn.onclick = ()=>{
-    if(history.length>1){
-        history.pop();
-        restoreState(history[history.length-1]);
-    }
+  if(history.length>1){
+    history.pop();
+    restoreState(history[history.length-1]);
+  }
 };
 
 initBoard();
@@ -240,3 +240,4 @@ renderBoard();
 </script>
 </body>
 </html>
+
