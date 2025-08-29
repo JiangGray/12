@@ -39,7 +39,10 @@ button {
 #resetBtn { background:#ffcc66; } #resetBtn:hover { background:#ffaa33; }
 #undoBtn { background:#99ccff; } #undoBtn:hover { background:#66aaff; }
 
-#game { display:flex; gap:10px; justify-content:center; position:relative; z-index:1; }
+#game {
+  display:flex; gap:10px; justify-content:center; position:relative; z-index:1;
+  align-items: flex-start;
+}
 .board-container {
   display:grid;
   grid-template-columns:repeat(3, min(15vw, 80px));
@@ -52,23 +55,31 @@ button {
   font-size:1.2em; border-radius:8px; position:relative;
 }
 .piece {
-  width:90%; height:90%; display:flex; justify-content:center; align-items:center;
+  width:100%; height:100%; display:flex; justify-content:center; align-items:center;
   border-radius:8px; font-weight:bold; cursor:pointer;
   user-select:none;
-  box-shadow: none;   /* 移除陰影 */
-  outline: none;      /* 移除 outline */
+  box-shadow: none;
+  outline: none;
 }
 .p1 { background:#ff9999; } .p2 { background:#9999ff; }
 .highlight {
-  outline: none;          /* 不要黃色外框 */
-  border: 2px solid yellow;  /* 改成平面邊框高亮 */
+  outline: none;
+  border: 2px solid yellow;
 }
-#capturedP1, #capturedP2 { display:flex; flex-direction:column; gap:5px; }
+#capturedP1, #capturedP2 {
+  display:flex; flex-direction: column; gap:2px;
+  justify-content: flex-start; align-items: center;
+}
+#capturedP1 .piece, #capturedP2 .piece {
+  width: calc(min(15vw, 80px));
+  height: calc(min(15vw, 80px));
+}
 
 @media (max-width:600px){
   .board-container { grid-template-columns:repeat(3,min(20vw,60px)); grid-template-rows:repeat(4,min(20vw,60px)); }
   .cell{ font-size:1em; } .piece{ font-size:0.9em; }
   #turnIndicator{ font-size:18px; } button{ padding:10px 16px; font-size:16px; }
+  #capturedP1 .piece, #capturedP2 .piece { width: calc(min(20vw, 60px)); height: calc(min(20vw, 60px)); }
 }
 </style>
 </head>
@@ -102,17 +113,28 @@ const piecesDef={
   C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
   X:{name:"象",moves:[[1,1],[1,-1],[-1,1],[-1,-1]]},
   B:{name:"兵",moves:[[1,0]]},
-  G:{name:"升吉",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
+  G:{name:"雞",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
 };
 let boardState,history=[];
 
-function cloneState(){ return { board: JSON.parse(JSON.stringify(boardState)), player: currentPlayer, capturedP1: capturedP1.innerHTML, capturedP2: capturedP2.innerHTML }; }
+function cloneState(){ 
+  return { 
+    board: JSON.parse(JSON.stringify(boardState)), 
+    player: currentPlayer, 
+    capturedP1: capturedP1.innerHTML, 
+    capturedP2: capturedP2.innerHTML 
+  }; 
+}
+
 function restoreState(state){
   boardState=JSON.parse(JSON.stringify(state.board));
-  currentPlayer=state.player;
   capturedP1.innerHTML=state.capturedP1;
   capturedP2.innerHTML=state.capturedP2;
   selected=null; isDropMode=false;
+
+  // 修正悔棋後玩家順序
+  currentPlayer = state.player===1 ? 2 : 1;
+
   renderBoard();
 }
 
@@ -200,7 +222,7 @@ board.addEventListener("click",e=>{
       if(target.type === "J"){
         alert(`玩家${currentPlayer}獲勝!`);
       }
-      addCaptured({...target, player:currentPlayer});
+      addCaptured({...target});
     }
 
     boardState[r][c] = selected;
@@ -218,7 +240,6 @@ board.addEventListener("click",e=>{
 });
 
 function addCaptured(piece){
-  if(piece.type==="G") piece.type="B";
   const div = document.createElement("div");
   div.className = `piece p${piece.player}`;
   div.textContent = piecesDef[piece.type].name;
