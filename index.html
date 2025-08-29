@@ -1,197 +1,466 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<title>動物將棋 - 雙人輪流</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>動物將棋 - 雙人輪流（置中 & 玩家顏色）</title>
 <style>
-  body { font-family: "Microsoft JhengHei", sans-serif; text-align:center; background:#f8f8f8;}
-  h1 { margin:10px 0; }
-  #status { margin:10px; font-size:18px; font-weight:bold; }
-  .board { display:grid; grid-template-columns:repeat(3,80px); grid-template-rows:repeat(4,80px); gap:5px; margin:20px auto; }
-  .cell { width:80px; height:80px; border:2px solid #444; display:flex; align-items:center; justify-content:center; font-size:32px; cursor:pointer; background:white;}
-  .cell.highlight { background:#ffe082; }
-  .cell.promote { background:#a5d6a7; }
-  .captured { margin:10px; min-height:40px; }
-  .captured span { font-size:28px; margin:0 5px; cursor:pointer; }
+  :root{
+    --cell-size: 96px;
+    --gap: 8px;
+    --bg: #f3f6fb;
+    --player1-color: #2b6cb0; /* 藍方 */
+    --player2-color: #d43b3b; /* 紅方 */
+    --highlight: #ffe082;
+    --promote: #a5d6a7;
+  }
+
+  html,body{
+    height:100%;
+    margin:0;
+    background: linear-gradient(180deg,#eef6ff,#fbfdff);
+    font-family: "Microsoft JhengHei", "Segoe UI", Arial, sans-serif;
+    color:#222;
+  }
+
+  /* 置中容器：水平與垂直置中 */
+  .page {
+    min-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    box-sizing:border-box;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* 左：遊戲區 (棋盤置中) */
+  .game {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+
+  .status {
+    font-weight:700;
+    padding:6px 12px;
+    border-radius:8px;
+    background: linear-gradient(180deg,#ffffff, #f0f6ff);
+    box-shadow: 0 6px 16px rgba(15,40,80,0.06);
+  }
+
+  /* 棋盤 */
+  .board {
+    display:grid;
+    grid-template-columns: repeat(3, var(--cell-size));
+    grid-template-rows: repeat(4, var(--cell-size));
+    gap: var(--gap);
+    padding: 12px;
+    background: linear-gradient(180deg,#ffffff,#f7fbff);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(20,40,80,0.08);
+  }
+
+  .cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    background: linear-gradient(180deg,#fff,#f9fbff);
+    border-radius:10px;
+    border: 2px solid rgba(0,0,0,0.06);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    position:relative;
+    transition: transform .06s linear, box-shadow .06s linear, background .12s;
+    font-size: 44px;
+  }
+  .cell:active { transform: translateY(1px); }
+
+  /* 高亮一般移動 */
+  .cell.highlight { background: var(--highlight); box-shadow: 0 8px 18px rgba(0,0,0,0.06); }
+
+  /* 高亮可升級（打入會升級） */
+  .cell.promote { background: var(--promote); box-shadow: 0 8px 18px rgba(0,0,0,0.06); }
+
+  /* 棋子外觀：圓球並以玩家顏色填充 */
+  .piece {
+    width: 78%;
+    height: 78%;
+    border-radius: 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:34px;
+    font-weight:700;
+    color: white;
+    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.06);
+    transition: transform .08s ease;
+  }
+  .piece.owner1 {
+    background: linear-gradient(180deg, var(--player1-color), #1f57a6);
+    box-shadow: 0 6px 12px rgba(43,108,176,0.25);
+  }
+  .piece.owner2 {
+    background: linear-gradient(180deg, var(--player2-color), #b62f2f);
+    box-shadow: 0 6px 12px rgba(212,59,59,0.25);
+    transform: rotate(180deg); /* 讓對方棋子朝下看起來像面向玩家 */
+  }
+
+  /* 被選取的原格有邊框 */
+  .cell.selected { outline: 3px solid #ffd26a; box-shadow:0 10px 22px rgba(0,0,0,0.08); }
+
+  /* 右側：持駒與說明 */
+  .side {
+    width: 300px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    align-items:stretch;
+  }
+  .box {
+    padding:12px;
+    border-radius:12px;
+    background: linear-gradient(180deg,#fff,#fbfdff);
+    box-shadow: 0 8px 20px rgba(20,40,80,0.06);
+  }
+  .hand-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .hand-piece {
+    min-width:58px;
+    height:48px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:26px;
+    cursor:pointer;
+    border:1px solid #e6e9ef;
+    background:#fff;
+  }
+  .hand-piece.selected { box-shadow: 0 10px 24px rgba(0,0,0,0.08); border-color:#ffd26a; }
+
+  .legend { color:#445; font-size:13px; margin-top:8px; }
+
+  /* responsive: 小螢幕改為直向 */
+  @media (max-width:920px){
+    .wrap{ flex-direction:column; align-items:center; }
+    .side{ width:100%; max-width:420px; }
+  }
 </style>
 </head>
 <body>
-<h1>🐘 動物將棋 🦁</h1>
-<div id="status">輪到 玩家 1</div>
-<div class="board" id="board"></div>
-<div>
-  <h3>玩家 1 持駒</h3>
-  <div id="captured1" class="captured"></div>
-  <h3>玩家 2 持駒</h3>
-  <div id="captured2" class="captured"></div>
-</div>
+  <div class="page">
+    <div class="wrap">
+      <div class="game">
+        <div class="status" id="status">輪到：玩家 1（藍）</div>
+        <div class="board" id="board" role="grid" aria-label="動物將棋棋盤"></div>
+        <div class="legend small">點選己方棋子或持駒 → 會顯示可移動/可放置格，點格子執行移動或打入。</div>
+      </div>
+
+      <div class="side">
+        <div class="box">
+          <h3>玩家 1（藍） 持駒</h3>
+          <div id="hand1" class="hand-row"></div>
+          <div class="legend">點選持駒再點空格放置。</div>
+        </div>
+
+        <div class="box">
+          <h3>玩家 2（紅） 持駒</h3>
+          <div id="hand2" class="hand-row"></div>
+          <div class="legend">吃子會加入持駒（吃到母雞會變小雞）。</div>
+        </div>
+
+        <div class="box">
+          <h3>棋子說明</h3>
+          <div class="legend">
+            🦁 獅子：八方向一步。<br>
+            🦒 長頸鹿：直向（上下左右）一步。<br>
+            🐘 象：斜向一步。<br>
+            🐥 小雞：向前一步（升為 🐓 可四向一步）。<br>
+            打入小雞於對方底線會直接升級為母雞（🐓）。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
-const boardEl=document.getElementById("board");
-const statusEl=document.getElementById("status");
-const cap1El=document.getElementById("captured1");
-const cap2El=document.getElementById("captured2");
+/* UI + game logic */
+/* board: 4 rows (0..3) × 3 cols (0..2) */
+const EMOJI = { lion:"🦁", giraffe:"🦒", elephant:"🐘", chick:"🐥", hen:"🐓" };
 
-const pieces={ lion:"🦁", elephant:"🐘", giraffe:"🦒", chick:"🐥", hen:"🐓"};
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const hand1El = document.getElementById('hand1');
+const hand2El = document.getElementById('hand2');
 
-let board=[
-  [ {player:2,type:"giraffe"}, {player:2,type:"lion"}, {player:2,type:"elephant"} ],
-  [ null, {player:2,type:"chick"}, null ],
-  [ null, {player:1,type:"chick"}, null ],
-  [ {player:1,type:"elephant"}, {player:1,type:"lion"}, {player:1,type:"giraffe"} ]
+let board = [
+  [ {t:'giraffe', p:2}, {t:'lion', p:2}, {t:'elephant', p:2} ],
+  [ null,             {t:'chick', p:2}, null ],
+  [ null,             {t:'chick', p:1}, null ],
+  [ {t:'elephant', p:1}, {t:'lion', p:1}, {t:'giraffe', p:1} ]
 ];
-let captured={1:[],2:[]};
-let currentPlayer=1;
-let selected=null;
-let selectedCaptured=null;
-let highlights=[];
+let hands = {1:[], 2:[]};
+let currentPlayer = 1;
+let selected = null; // {r,c}
+let selectedHand = null; // {player, idx}
+let highlights = []; // array of {r,c,type} type: normal|promote
 
-function renderBoard(){
-  boardEl.innerHTML="";
+function render(){
+  boardEl.innerHTML = '';
+  // fill cells
   for(let r=0;r<4;r++){
     for(let c=0;c<3;c++){
-      const cell=document.createElement("div");
-      cell.className="cell";
-      cell.dataset.row=r;
-      cell.dataset.col=c;
-      const piece=board[r][c];
-      if(piece){ cell.textContent=pieces[piece.type]; cell.style.color=piece.player===1?"blue":"red"; }
+      const idx = r*3 + c;
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r; cell.dataset.c = c;
+
+      // piece
+      const piece = board[r][c];
+      if(piece){
+        const pdiv = document.createElement('div');
+        pdiv.className = 'piece ' + (piece.p===1 ? 'owner1' : 'owner2');
+        pdiv.textContent = EMOJI[piece.t] || piece.t;
+        cell.appendChild(pdiv);
+      }
+      cell.addEventListener('click', onCellClick);
       boardEl.appendChild(cell);
     }
   }
-  renderCaptured();
-  highlightCells();
+
+  renderHands();
+  applyHighlights();
+  updateStatus();
 }
 
-function renderCaptured(){
-  cap1El.innerHTML=""; cap2El.innerHTML="";
-  captured[1].forEach((p,i)=>{
-    const span=document.createElement("span");
-    span.textContent=pieces[p.type];
-    span.dataset.index=i;
-    span.onclick=()=>selectCaptured(1,i);
-    cap1El.appendChild(span);
-  });
-  captured[2].forEach((p,i)=>{
-    const span=document.createElement("span");
-    span.textContent=pieces[p.type];
-    span.dataset.index=i;
-    span.onclick=()=>selectCaptured(2,i);
-    cap2El.appendChild(span);
-  });
+function updateStatus(){
+  statusEl.textContent = `輪到：玩家 ${currentPlayer} （${currentPlayer===1?'藍':'紅'}）`;
 }
 
-function selectCaptured(player,index){
-  if(player!==currentPlayer) return;
-  selectedCaptured={player,index};
-  selected=null;
-  highlights=[];
-  const piece=captured[player][index];
-  for(let r=0;r<4;r++){
-    for(let c=0;c<3;c++){
-      if(!board[r][c]){
-        let type="normal";
-        if(piece.type==="chick"){
-          if((player===1&&r===0)||(player===2&&r===3)) type="promote";
+function renderHands(){
+  hand1El.innerHTML=''; hand2El.innerHTML='';
+  [1,2].forEach(p=>{
+    const el = p===1 ? hand1El : hand2El;
+    const arr = hands[p];
+    if(arr.length===0){
+      const span = document.createElement('div'); span.className='hand-piece'; span.textContent='—'; el.appendChild(span);
+    } else {
+      // compress by type
+      const counts = {};
+      arr.forEach(t=> counts[t]=(counts[t]||0)+1);
+      Object.keys(counts).forEach(t=>{
+        const btn = document.createElement('div');
+        btn.className = 'hand-piece';
+        btn.innerHTML = `${EMOJI[t]} × ${counts[t]}`;
+        if(p===currentPlayer){
+          btn.onclick = ()=> {
+            // select the first index of this type in hand
+            const idx = hands[p].indexOf(t);
+            selectedHand = {player:p, idx: idx, type: t};
+            selected = null;
+            // compute highlights for drop
+            computeDropHighlights(p, t);
+            render();
+          };
         }
-        highlights.push({row:r,col:c,type});
-      }
+        el.appendChild(btn);
+      });
     }
-  }
-  statusEl.textContent="玩家 "+player+" 選擇持駒，點棋盤空格放置";
-  renderBoard();
+  });
 }
 
-function handleClick(e){
-  const row=parseInt(e.target.dataset.row);
-  const col=parseInt(e.target.dataset.col);
-  if(isNaN(row)) return;
-
-  // 打入持駒
-  if(selectedCaptured){
-    if(board[row][col]==null){
-      const piece=captured[currentPlayer][selectedCaptured.index];
-      if(piece.type==="chick" && ((currentPlayer===1&&row===0)||(currentPlayer===2&&row===3))){
-        board[row][col]={player:currentPlayer,type:"hen"}; // 直接升級
-      }else{
-        board[row][col]={player:currentPlayer,type:piece.type};
-      }
-      captured[currentPlayer].splice(selectedCaptured.index,1);
-      selectedCaptured=null;
-      endTurn();
-      renderBoard();
-    }
-    return;
-  }
-
-  const clickedPiece=board[row][col];
-
-  if(selected){
-    const canMove=highlights.some(h=>h.row===row&&h.col===col);
-    if(canMove) movePiece(selected.row,selected.col,row,col);
-    selected=null;
-    highlights=[];
-    renderBoard();
-  }else{
-    if(clickedPiece&&clickedPiece.player===currentPlayer){
-      selected={row,col};
-      highlights=getLegalMoves(row,col);
-      renderBoard();
-    }
-  }
-}
-
+/* compute legal moves for piece at r,c */
 function getLegalMoves(r,c){
-  const piece=board[r][c];
+  const piece = board[r][c];
   if(!piece) return [];
-  const moves=[];
-  const dirs={
-    lion:[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]],
-    giraffe:[[-1,0],[1,0],[0,-1],[0,1]],
-    elephant:[[-1,-1],[-1,1],[1,-1],[1,1]],
-    chick: piece.type==="hen"?[[-1,0],[1,0],[0,-1],[0,1]]: piece.player===1?[[-1,0]]:[[1,0]]
+  const moves = [];
+  const owner = piece.p;
+  const dirsFor = {
+    lion: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]],
+    giraffe: [[-1,0],[1,0],[0,-1],[0,1]],
+    elephant: [[-1,-1],[-1,1],[1,-1],[1,1]],
+    chick: (piece.t==='hen') ? [[-1,0],[1,0],[0,-1],[0,1]] : (owner===1 ? [[-1,0]] : [[1,0]])
   };
-  dirs[piece.type].forEach(d=>{
-    const nr=r+d[0], nc=c+d[1];
-    if(nr>=0&&nr<4&&nc>=0&&nc<3){
-      const target=board[nr][nc];
-      if(!target||target.player!==piece.player) moves.push({row:nr,col:nc,type:"normal"});
+  const deltas = dirsFor[piece.t] || [];
+  deltas.forEach(d=>{
+    const nr = r + d[0], nc = c + d[1];
+    if(nr>=0 && nr<4 && nc>=0 && nc<3){
+      const tgt = board[nr][nc];
+      if(!tgt || tgt.p !== owner){
+        moves.push({r:nr,c:nc,type:'normal'});
+      }
     }
   });
   return moves;
 }
 
-function highlightCells(){
+/* compute drop highlights for a hand piece type */
+function computeDropHighlights(player, type){
+  highlights = [];
+  for(let r=0;r<4;r++){
+    for(let c=0;c<3;c++){
+      if(board[r][c]==null){
+        if(type==='chick'){
+          // if dropping chick into promotion rank, mark promote
+          if((player===1 && r===0) || (player===2 && r===3)){
+            highlights.push({r,c,type:'promote'});
+            continue;
+          }
+        }
+        highlights.push({r,c,type:'normal'});
+      }
+    }
+  }
+}
+
+/* apply highlight classes to DOM cells */
+function applyHighlights(){
+  // clear selected/ highlighter then add
+  const cells = boardEl.querySelectorAll('.cell');
+  cells.forEach(cell=> {
+    cell.classList.remove('highlight','promote','selected');
+  });
+  // mark selected origin if any
+  if(selected){
+    const idx = selected.r*3 + selected.c;
+    const scell = cells[idx];
+    if(scell) scell.classList.add('selected');
+  }
   highlights.forEach(h=>{
-    const idx=h.row*3+h.col;
-    if(h.type==="promote") boardEl.children[idx].classList.add("promote");
-    else boardEl.children[idx].classList.add("highlight");
+    const idx = h.r*3 + h.c;
+    const el = cells[idx];
+    if(!el) return;
+    if(h.type==='promote') el.classList.add('promote');
+    else el.classList.add('highlight');
   });
 }
 
-function movePiece(sr,sc,dr,dc){
-  const piece=board[sr][sc];
-  const target=board[dr][dc];
-  if(target){
-    if(target.type==="lion"){
-      alert("玩家 "+currentPlayer+" 獲勝！");
-      location.reload();
+/* when clicking a cell */
+function onCellClick(e){
+  const r = parseInt(e.currentTarget.dataset.r);
+  const c = parseInt(e.currentTarget.dataset.c);
+
+  // if a hand piece selected -> attempt drop
+  if(selectedHand){
+    if(board[r][c]==null){
+      // dropping chick on promotion rank auto-promotes
+      const pieceType = selectedHand.type;
+      if(pieceType==='chick' && ((selectedHand.player===1 && r===0) || (selectedHand.player===2 && r===3))){
+        board[r][c] = {t:'hen', p:selectedHand.player};
+      } else {
+        board[r][c] = {t:pieceType, p:selectedHand.player};
+      }
+      // remove that piece from hand (index may have shifted since compress)
+      hands[selectedHand.player].splice(selectedHand.idx, 1);
+      selectedHand = null;
+      highlights = [];
+      endTurn();
+      render();
+    }
+    return;
+  }
+
+  const clicked = board[r][c];
+
+  if(selected){
+    // if clicking a highlighted move, perform move
+    const ok = highlights.some(h=>h.r===r && h.c===c);
+    if(ok){
+      movePiece(selected.r, selected.c, r, c);
+      selected = null;
+      highlights = [];
+      render();
+      return;
+    } else {
+      // if click own piece, reselect
+      if(clicked && clicked.p === currentPlayer){
+        selected = {r,c};
+        highlights = getLegalMoves(r,c);
+        render();
+        return;
+      }
+      // else clear selection
+      selected = null;
+      highlights = [];
+      render();
       return;
     }
-    captured[currentPlayer].push({player:currentPlayer,type:target.type==="hen"?"chick":target.type});
+  } else {
+    // no selection yet: select only if own piece
+    if(clicked && clicked.p === currentPlayer){
+      selected = {r,c};
+      highlights = getLegalMoves(r,c);
+      render();
+    }
   }
-  board[dr][dc]=piece;
-  board[sr][sc]=null;
-  if(piece.type==="chick"){
-    if((piece.player===1&&dr===0)||(piece.player===2&&dr===3)) piece.type="hen";
+}
+
+/* perform move from sr,sc to dr,dc */
+function movePiece(sr,sc,dr,dc){
+  const mover = board[sr][sc];
+  const target = board[dr][dc];
+  if(target){
+    // capture: demote hen -> chick then push to hand
+    const capType = (target.t === 'hen') ? 'chick' : target.t;
+    hands[currentPlayer].push(capType);
+    // if captured lion => win
+    if(target.t === 'lion'){
+      setTimeout(()=> {
+        alert(`玩家 ${currentPlayer}（${currentPlayer===1?'藍':'紅'}）勝利！`);
+        resetGame();
+      }, 30);
+      return;
+    }
   }
+  board[dr][dc] = mover;
+  board[sr][sc] = null;
+
+  // chick promotion on reaching far rank
+  if(mover.t === 'chick'){
+    if((mover.p === 1 && dr === 0) || (mover.p === 2 && dr === 3)) mover.t = 'hen';
+  }
+
   endTurn();
 }
 
-function endTurn(){ currentPlayer=currentPlayer===1?2:1; statusEl.textContent="輪到 玩家 "+currentPlayer; }
+/* end turn */
+function endTurn(){
+  currentPlayer = currentPlayer === 1 ? 2 : 1;
+  statusEl.textContent = `輪到：玩家 ${currentPlayer} （${currentPlayer===1?'藍':'紅'}）`;
+}
 
-boardEl.addEventListener("click",handleClick);
-renderBoard();
+/* reset game */
+function resetGame(){
+  board = [
+    [ {t:'giraffe', p:2}, {t:'lion', p:2}, {t:'elephant', p:2} ],
+    [ null,             {t:'chick', p:2}, null ],
+    [ null,             {t:'chick', p:1}, null ],
+    [ {t:'elephant', p:1}, {t:'lion', p:1}, {t:'giraffe', p:1} ]
+  ];
+  hands = {1:[],2:[]};
+  currentPlayer = 1;
+  selected = null;
+  selectedHand = null;
+  highlights = [];
+  render();
+}
+
+/* initial render */
+render();
+
+/* expose for console debug */
+window.resetGame = resetGame;
 </script>
 </body>
 </html>
