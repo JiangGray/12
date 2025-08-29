@@ -1,0 +1,14 @@
+cd /d/12
+git init
+git add .
+git commit -m "Add 12"
+git branch -M main
+git remote add origin https://github.com/JiangGray/12.git
+git push -u origin main
+
+https://jianggray.github.io/lotto-predict/
+https://jianggray.github.io/12/
+
+git add .
+git commit -m "mimi"
+git push
