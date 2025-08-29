@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>動物將棋 - 雙人輪流</title>
+<style>
+  body { font-family: "Microsoft JhengHei", sans-serif; text-align:center; background:#f8f8f8;}
+  h1 { margin:10px 0; }
+  #status { margin:10px; font-size:18px; font-weight:bold; }
+  .board { display:grid; grid-template-columns:repeat(3,80px); grid-template-rows:repeat(4,80px); gap:5px; margin:20px auto; }
+  .cell { width:80px; height:80px; border:2px solid #444; display:flex; align-items:center; justify-content:center; font-size:32px; cursor:pointer; background:white;}
+  .cell.highlight { background:#ffe082; }
+  .cell.promote { background:#a5d6a7; }
+  .captured { margin:10px; min-height:40px; }
+  .captured span { font-size:28px; margin:0 5px; cursor:pointer; }
+</style>
+</head>
+<body>
+<h1>🐘 動物將棋 🦁</h1>
+<div id="status">輪到 玩家 1</div>
+<div class="board" id="board"></div>
+<div>
+  <h3>玩家 1 持駒</h3>
+  <div id="captured1" class="captured"></div>
+  <h3>玩家 2 持駒</h3>
+  <div id="captured2" class="captured"></div>
+</div>
+
+<script>
+const boardEl=document.getElementById("board");
+const statusEl=document.getElementById("status");
+const cap1El=document.getElementById("captured1");
+const cap2El=document.getElementById("captured2");
+
+const pieces={ lion:"🦁", elephant:"🐘", giraffe:"🦒", chick:"🐥", hen:"🐓"};
+
+let board=[
+  [ {player:2,type:"giraffe"}, {player:2,type:"lion"}, {player:2,type:"elephant"} ],
+  [ null, {player:2,type:"chick"}, null ],
+  [ null, {player:1,type:"chick"}, null ],
+  [ {player:1,type:"elephant"}, {player:1,type:"lion"}, {player:1,type:"giraffe"} ]
+];
+let captured={1:[],2:[]};
+let currentPlayer=1;
+let selected=null;
+let selectedCaptured=null;
+let highlights=[];
+
+function renderBoard(){
+  boardEl.innerHTML="";
+  for(let r=0;r<4;r++){
+    for(let c=0;c<3;c++){
+      const cell=document.createElement("div");
+      cell.className="cell";
+      cell.dataset.row=r;
+      cell.dataset.col=c;
+      const piece=board[r][c];
+      if(piece){ cell.textContent=pieces[piece.type]; cell.style.color=piece.player===1?"blue":"red"; }
+      boardEl.appendChild(cell);
+    }
+  }
+  renderCaptured();
+  highlightCells();
+}
+
+function renderCaptured(){
+  cap1El.innerHTML=""; cap2El.innerHTML="";
+  captured[1].forEach((p,i)=>{
+    const span=document.createElement("span");
+    span.textContent=pieces[p.type];
+    span.dataset.index=i;
+    span.onclick=()=>selectCaptured(1,i);
+    cap1El.appendChild(span);
+  });
+  captured[2].forEach((p,i)=>{
+    const span=document.createElement("span");
+    span.textContent=pieces[p.type];
+    span.dataset.index=i;
+    span.onclick=()=>selectCaptured(2,i);
+    cap2El.appendChild(span);
+  });
+}
+
+function selectCaptured(player,index){
+  if(player!==currentPlayer) return;
+  selectedCaptured={player,index};
+  selected=null;
+  highlights=[];
+  const piece=captured[player][index];
+  for(let r=0;r<4;r++){
+    for(let c=0;c<3;c++){
+      if(!board[r][c]){
+        let type="normal";
+        if(piece.type==="chick"){
+          if((player===1&&r===0)||(player===2&&r===3)) type="promote";
+        }
+        highlights.push({row:r,col:c,type});
+      }
+    }
+  }
+  statusEl.textContent="玩家 "+player+" 選擇持駒，點棋盤空格放置";
+  renderBoard();
+}
+
+function handleClick(e){
+  const row=parseInt(e.target.dataset.row);
+  const col=parseInt(e.target.dataset.col);
+  if(isNaN(row)) return;
+
+  // 打入持駒
+  if(selectedCaptured){
+    if(board[row][col]==null){
+      const piece=captured[currentPlayer][selectedCaptured.index];
+      if(piece.type==="chick" && ((currentPlayer===1&&row===0)||(currentPlayer===2&&row===3))){
+        board[row][col]={player:currentPlayer,type:"hen"}; // 直接升級
+      }else{
+        board[row][col]={player:currentPlayer,type:piece.type};
+      }
+      captured[currentPlayer].splice(selectedCaptured.index,1);
+      selectedCaptured=null;
+      endTurn();
+      renderBoard();
+    }
+    return;
+  }
+
+  const clickedPiece=board[row][col];
+
+  if(selected){
+    const canMove=highlights.some(h=>h.row===row&&h.col===col);
+    if(canMove) movePiece(selected.row,selected.col,row,col);
+    selected=null;
+    highlights=[];
+    renderBoard();
+  }else{
+    if(clickedPiece&&clickedPiece.player===currentPlayer){
+      selected={row,col};
+      highlights=getLegalMoves(row,col);
+      renderBoard();
+    }
+  }
+}
+
+function getLegalMoves(r,c){
+  const piece=board[r][c];
+  if(!piece) return [];
+  const moves=[];
+  const dirs={
+    lion:[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]],
+    giraffe:[[-1,0],[1,0],[0,-1],[0,1]],
+    elephant:[[-1,-1],[-1,1],[1,-1],[1,1]],
+    chick: piece.type==="hen"?[[-1,0],[1,0],[0,-1],[0,1]]: piece.player===1?[[-1,0]]:[[1,0]]
+  };
+  dirs[piece.type].forEach(d=>{
+    const nr=r+d[0], nc=c+d[1];
+    if(nr>=0&&nr<4&&nc>=0&&nc<3){
+      const target=board[nr][nc];
+      if(!target||target.player!==piece.player) moves.push({row:nr,col:nc,type:"normal"});
+    }
+  });
+  return moves;
+}
+
+function highlightCells(){
+  highlights.forEach(h=>{
+    const idx=h.row*3+h.col;
+    if(h.type==="promote") boardEl.children[idx].classList.add("promote");
+    else boardEl.children[idx].classList.add("highlight");
+  });
+}
+
+function movePiece(sr,sc,dr,dc){
+  const piece=board[sr][sc];
+  const target=board[dr][dc];
+  if(target){
+    if(target.type==="lion"){
+      alert("玩家 "+currentPlayer+" 獲勝！");
+      location.reload();
+      return;
+    }
+    captured[currentPlayer].push({player:currentPlayer,type:target.type==="hen"?"chick":target.type});
+  }
+  board[dr][dc]=piece;
+  board[sr][sc]=null;
+  if(piece.type==="chick"){
+    if((piece.player===1&&dr===0)||(piece.player===2&&dr===3)) piece.type="hen";
+  }
+  endTurn();
+}
+
+function endTurn(){ currentPlayer=currentPlayer===1?2:1; statusEl.textContent="輪到 玩家 "+currentPlayer; }
+
+boardEl.addEventListener("click",handleClick);
+renderBoard();
+</script>
+</body>
+</html>
