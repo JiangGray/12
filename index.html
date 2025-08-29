@@ -86,7 +86,6 @@ const capturedP2=document.getElementById("capturedP2");
 const turnIndicator=document.getElementById("turnIndicator");
 const resetBtn=document.getElementById("resetBtn");
 const undoBtn=document.getElementById("undoBtn");
-const promoteSound=new Audio("promote.mp3");
 
 const rows=4,cols=3;
 let currentPlayer=1,selected=null,isDropMode=false;
@@ -95,7 +94,7 @@ const piecesDef={
   C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
   X:{name:"象",moves:[[1,1],[1,-1],[-1,1],[-1,-1]]},
   B:{name:"兵",moves:[[1,0]]},
-  G:{name:"吉娃娃",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
+  G:{name:"吉",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
 };
 let boardState,history=[];
 
@@ -214,7 +213,6 @@ board.addEventListener("click",e=>{
                 const promotedCell = document.querySelector(`.piece[data-player="${currentPlayer}"][data-type="G"]`);
                 if(promotedCell){
                     promotedCell.classList.add("promote");
-                    promoteSound.play().catch(()=>{});
                 }
             }, 50);
         }
