@@ -113,7 +113,7 @@ const piecesDef={
   C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
   X:{name:"象",moves:[[1,1],[1,-1],[-1,1],[-1,-1]]},
   B:{name:"兵",moves:[[1,0]]},
-  G:{name:"咪",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
+  G:{name:"咪",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]} // 棋盤上的雞顯示咪
 };
 let boardState,history=[];
 
@@ -147,7 +147,6 @@ function restoreState(state){
   isDropMode = false;
   currentPlayer = state.nextPlayer;
 
-  // 重新綁定捕獲棋事件
   bindCapturedEvents(capturedP1);
   bindCapturedEvents(capturedP2);
 
@@ -238,7 +237,7 @@ board.addEventListener("click",e=>{
       if(target.type === "J"){
         alert(`玩家${currentPlayer}獲勝!`);
       }
-      addCaptured({...target, player: currentPlayer}); // 捕獲棋歸當前玩家
+      addCaptured({...target, player: currentPlayer});
     }
 
     boardState[r][c] = selected;
@@ -256,7 +255,9 @@ board.addEventListener("click",e=>{
 });
 
 function addCaptured(piece){
+  // 捕獲咪(G)變成兵(B)
   if(piece.type === "G") piece.type = "B";
+
   const div = document.createElement("div");
   div.className = `piece p${piece.player}`;
   div.textContent = piecesDef[piece.type].name;
