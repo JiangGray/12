@@ -24,7 +24,7 @@ body::before {
   width:95%; max-width:500px; margin-bottom:10px; gap:10px;
   position:relative; z-index:1;
 }
-#visitorBadge img { height:24px; margin-right:5px; vertical-align:middle; }
+#visitorBadge img { height:24px; max-height:24px; margin-right:5px; vertical-align:middle; }
 #turnIndicator {
   font-size:20px; font-weight:bold; padding:6px 15px;
   border-radius:8px; background: rgba(255,255,255,0.8);
@@ -38,7 +38,7 @@ button {
 #resetBtn { background:#ffcc66; } #resetBtn:hover { background:#ffaa33; }
 #undoBtn { background:#99ccff; } #undoBtn:hover { background:#66aaff; }
 
-#game { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; position:relative; z-index:1; }
+#game { display:flex; gap:10px; flex-wrap:nowrap; justify-content:center; position:relative; z-index:1; }
 .board-container {
   display:grid; grid-template-columns:repeat(3, minmax(60px,80px));
   grid-template-rows:repeat(4, minmax(60px,80px));
@@ -67,6 +67,7 @@ button {
 <body>
 <div id="topBar">
   <div id="visitorBadge">
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=JiangGray.12" alt="瀏覽人數">
   </div>
   <div id="turnIndicator">玩家1回合</div>
   <button id="undoBtn">悔棋</button>
@@ -93,7 +94,7 @@ const piecesDef={
   C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
   X:{name:"象",moves:[[1,1],[1,-1],[-1,1],[-1,-1]]},
   B:{name:"兵",moves:[[1,0]]},
-  G:{name:"吉",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
+  G:{name:"雞",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
 };
 let boardState,history=[];
 
@@ -106,6 +107,7 @@ function restoreState(state){
   selected=null; isDropMode=false;
   renderBoard();
 }
+
 function initBoard(){
   boardState=Array(rows).fill(null).map(()=>Array(cols).fill(null));
   boardState[0][0]={player:2,type:"C"}; boardState[0][1]={player:2,type:"J"}; boardState[0][2]={player:2,type:"X"};
@@ -129,7 +131,7 @@ function renderBoard(){
         div.className=`piece p${p.player}`;
         div.textContent=piecesDef[p.type].name;
         div.dataset.player=p.player; div.dataset.type=p.type;
-        board.appendChild(div);
+        cell.appendChild(div);
       }
     }
   }
@@ -159,7 +161,7 @@ function showMoves(r,c,piece){
 function showDropPositions(player){
   clearHighlights();
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
-    if(player===1&&r>=2&&!boardState[r][c] || player===2&&r<=1&&!boardState[r][c])
+    if((player===1&&r>=2&&!boardState[r][c]) || (player===2&&r<=1&&!boardState[r][c]))
       document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`).classList.add("highlight");
   }
 }
