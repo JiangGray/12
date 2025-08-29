@@ -4,17 +4,60 @@
 <meta charset="UTF-8">
 <title>迷你象棋（動物將棋規則）</title>
 <style>
-body { display:flex; flex-direction:column; align-items:center; font-family:sans-serif; margin:0; background:#f5f5dc; }
+body {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-family:sans-serif;
+  margin:0;
+  background:url('cat.jpg') no-repeat center center fixed;
+  background-size:cover;
+}
 h2{margin:5px;}
-.board{display:grid; grid-template-columns:repeat(3,80px); grid-template-rows:repeat(4,80px); gap:2px; background:#444; margin:10px 0;}
-.cell{width:80px; height:80px; background:#fff; display:flex; justify-content:center; align-items:center; font-size:28px; cursor:pointer; transition: background 0.3s;}
+.board{
+  display:grid;
+  grid-template-columns:repeat(3,80px);
+  grid-template-rows:repeat(4,80px);
+  gap:2px;
+  background:#444;
+  margin:10px 0;
+}
+.cell{
+  width:80px;
+  height:80px;
+  background:#fff5d7;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:28px;
+  cursor:pointer;
+  transition: background 0.3s;
+}
 .cell.highlight{background:#90ee90;}
-.piece{width:60px;height:60px;border-radius:10px;display:flex;justify-content:center;align-items:center;font-weight:bold;user-select:none;transition: transform 0.3s;}
+.piece{
+  width:60px;height:60px;
+  border-radius:10px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-weight:bold;
+  user-select:none;
+  transition: transform 0.3s;
+}
 .p1{background:#ff9999;}
 .p2{background:#9999ff;}
-.captured-zone{display:flex; gap:5px; min-height:50px; margin:5px; padding:5px; border:2px dashed #666; border-radius:10px; background:#fafafa;}
+.captured-zone{
+  display:flex; gap:5px; min-height:50px;
+  margin:5px; padding:5px;
+  border:2px dashed #666; border-radius:10px;
+  background:rgba(250,250,250,0.8);
+}
 .captured-zone .piece{cursor:grab;}
-@media(max-width:600px){.board{grid-template-columns:repeat(3,60px);grid-template-rows:repeat(4,60px);}.cell{width:60px;height:60px;}.piece{width:45px;height:45px;font-size:20px;}}
+@media(max-width:600px){
+  .board{grid-template-columns:repeat(3,60px);grid-template-rows:repeat(4,60px);}
+  .cell{width:60px;height:60px;}
+  .piece{width:45px;height:45px;font-size:20px;}
+}
 </style>
 </head>
 <body>
@@ -96,6 +139,16 @@ function showMoves(r,c,piece){
   });
 }
 
+function showDropPositions(player){
+  clearHighlights();
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(player===1 && r>=2 && !boardState[r][c]) document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`).classList.add("highlight");
+      if(player===2 && r<=1 && !boardState[r][c]) document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`).classList.add("highlight");
+    }
+  }
+}
+
 function switchPlayer(){currentPlayer=currentPlayer===1?2:1;clearHighlights();selected=null;isDropMode=false;}
 
 board.addEventListener("click",e=>{
@@ -137,7 +190,11 @@ function addCaptured(piece){
   div.dataset.player=piece.player;
   div.dataset.type=piece.type;
   div.onclick=()=>{
-    if(piece.player===currentPlayer){selected={player:piece.player,type:piece.type,element:div};isDropMode=true;}
+    if(piece.player===currentPlayer){
+      selected={player:piece.player,type:piece.type,element:div};
+      isDropMode=true;
+      showDropPositions(currentPlayer);
+    }
   };
   if(piece.player===1)capturedP1.appendChild(div); else capturedP2.appendChild(div);
 }
