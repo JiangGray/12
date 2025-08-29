@@ -14,10 +14,11 @@ body {
   position: relative; overflow: hidden;
 }
 body::before {
-  content:""; position:absolute; top:0; left:0;
+  content:""; position:fixed; top:0; left:0;
   width:100%; height:100%;
   background: rgba(0,0,0,0.5);
   backdrop-filter: blur(2px); z-index:0;
+  pointer-events: none;
 }
 #topBar {
   display:flex; justify-content:space-between; align-items:center;
@@ -40,26 +41,28 @@ button {
 
 #game { display:flex; gap:10px; justify-content:center; position:relative; z-index:1; }
 .board-container {
-  display:grid; grid-template-columns:repeat(3, 80px);
-  grid-template-rows:repeat(4, 80px);
+  display:grid;
+  grid-template-columns:repeat(3, min(15vw, 80px));
+  grid-template-rows:repeat(4, min(15vw, 80px));
   gap:2px; background:#333; padding:5px; border-radius:10px; position:relative;
 }
 .cell {
-  width:80px; height:80px; background: rgba(255,255,255,0.7);
+  width:100%; height:100%; background: rgba(255,255,255,0.7);
   display:flex; justify-content:center; align-items:center;
-  font-size:18px; border-radius:8px; position:relative;
+  font-size:1.2em; border-radius:8px; position:relative;
 }
 .piece {
-  width:100%; height:100%; display:flex; justify-content:center; align-items:center;
+  width:90%; height:90%; display:flex; justify-content:center; align-items:center;
   border-radius:8px; font-weight:bold; cursor:pointer;
+  user-select:none;
 }
 .p1 { background:#ff9999; } .p2 { background:#9999ff; }
 .highlight { outline:3px solid yellow; }
 #capturedP1, #capturedP2 { display:flex; flex-direction:column; gap:5px; }
 
 @media (max-width:600px){
-  .board-container { grid-template-columns:repeat(3,60px); grid-template-rows:repeat(4,60px); }
-  .cell{ font-size:16px; } .piece{ font-size:14px; }
+  .board-container { grid-template-columns:repeat(3,min(20vw,60px)); grid-template-rows:repeat(4,min(20vw,60px)); }
+  .cell{ font-size:1em; } .piece{ font-size:0.9em; }
   #turnIndicator{ font-size:18px; } button{ padding:10px 16px; font-size:16px; }
 }
 </style>
@@ -240,4 +243,3 @@ renderBoard();
 </script>
 </body>
 </html>
-
