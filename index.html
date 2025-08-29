@@ -256,6 +256,7 @@ board.addEventListener("click",e=>{
 });
 
 function addCaptured(piece){
+  if(piece.type === "G") piece.type = "B";
   const div = document.createElement("div");
   div.className = `piece p${piece.player}`;
   div.textContent = piecesDef[piece.type].name;
