@@ -4,65 +4,17 @@
 <meta charset="UTF-8">
 <title>迷你象棋（動物將棋規則）</title>
 <style>
-  body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    font-family: sans-serif;
-    background: #f5f5dc;
-  }
-  h2 { margin:5px; }
-  .board {
-    display: grid;
-    grid-template-columns: repeat(3, 80px);
-    grid-template-rows: repeat(4, 80px);
-    gap: 2px;
-    background: #444;
-    margin: 10px 0;
-  }
-  .cell {
-    width:80px;
-    height:80px;
-    background: #fff;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:28px;
-    cursor:pointer;
-    transition: background 0.3s;
-  }
-  .cell.highlight { background:#90ee90; }
-  .piece {
-    width:60px;
-    height:60px;
-    border-radius:10px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-weight:bold;
-    user-select:none;
-    transition: transform 0.3s;
-  }
-  .p1{background:#ff9999;}
-  .p2{background:#9999ff;}
-  .captured-zone {
-    display:flex;
-    gap:5px;
-    min-height:50px;
-    margin:5px;
-    padding:5px;
-    border:2px dashed #666;
-    border-radius:10px;
-    background:#fafafa;
-  }
-  .captured-zone .piece{cursor:grab;}
-  @media(max-width:600px){
-    .board{grid-template-columns:repeat(3,60px);grid-template-rows:repeat(4,60px);}
-    .cell{width:60px;height:60px;}
-    .piece{width:45px;height:45px;font-size:20px;}
-  }
+body { display:flex; flex-direction:column; align-items:center; font-family:sans-serif; margin:0; background:#f5f5dc; }
+h2{margin:5px;}
+.board{display:grid; grid-template-columns:repeat(3,80px); grid-template-rows:repeat(4,80px); gap:2px; background:#444; margin:10px 0;}
+.cell{width:80px; height:80px; background:#fff; display:flex; justify-content:center; align-items:center; font-size:28px; cursor:pointer; transition: background 0.3s;}
+.cell.highlight{background:#90ee90;}
+.piece{width:60px;height:60px;border-radius:10px;display:flex;justify-content:center;align-items:center;font-weight:bold;user-select:none;transition: transform 0.3s;}
+.p1{background:#ff9999;}
+.p2{background:#9999ff;}
+.captured-zone{display:flex; gap:5px; min-height:50px; margin:5px; padding:5px; border:2px dashed #666; border-radius:10px; background:#fafafa;}
+.captured-zone .piece{cursor:grab;}
+@media(max-width:600px){.board{grid-template-columns:repeat(3,60px);grid-template-rows:repeat(4,60px);}.cell{width:60px;height:60px;}.piece{width:45px;height:45px;font-size:20px;}}
 </style>
 </head>
 <body>
@@ -84,6 +36,7 @@ let currentPlayer=1;
 let selected=null;
 let isDropMode=false;
 
+// 棋子定義(動物將棋規則)
 const piecesDef={
   J:{name:"將",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]},
   C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
@@ -94,20 +47,16 @@ const piecesDef={
 let boardState=Array(rows).fill(null).map(()=>Array(cols).fill(null));
 
 function initBoard(){
-  // 玩家1(下)
-  boardState[3][0]={player:1,type:"C"};
-  boardState[3][1]={player:1,type:"J"};
-  boardState[3][2]={player:1,type:"C"};
-  boardState[2][0]={player:1,type:"X"};
-  boardState[2][1]={player:1,type:"B"};
-  boardState[2][2]={player:1,type:"X"};
-  // 玩家2(上)
+  // 玩家2（上方，藍色）
   boardState[0][0]={player:2,type:"C"};
   boardState[0][1]={player:2,type:"J"};
-  boardState[0][2]={player:2,type:"C"};
-  boardState[1][0]={player:2,type:"X"};
+  boardState[0][2]={player:2,type:"X"};
   boardState[1][1]={player:2,type:"B"};
-  boardState[1][2]={player:2,type:"X"};
+  // 玩家1（下方，紅色）
+  boardState[2][1]={player:1,type:"B"};
+  boardState[3][0]={player:1,type:"X"};
+  boardState[3][1]={player:1,type:"J"};
+  boardState[3][2]={player:1,type:"C"};
 }
 
 function renderBoard(){
@@ -153,7 +102,7 @@ board.addEventListener("click",e=>{
   const cell=e.target.closest(".cell");
   if(!cell)return;
   let r=+cell.dataset.row,c=+cell.dataset.col;
-  
+
   if(isDropMode && !boardState[r][c]){
     if((currentPlayer===1 && r>=2)||(currentPlayer===2 && r<=1)){
       boardState[r][c]={player:currentPlayer,type:selected.type};
