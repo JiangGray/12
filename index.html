@@ -113,7 +113,7 @@ const piecesDef={
   C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
   X:{name:"象",moves:[[1,1],[1,-1],[-1,1],[-1,-1]]},
   B:{name:"兵",moves:[[1,0]]},
-  G:{name:"雞",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
+  G:{name:"咪",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
 };
 let boardState,history=[];
 
@@ -132,10 +132,7 @@ function restoreState(state){
   capturedP1.innerHTML=state.capturedP1;
   capturedP2.innerHTML=state.capturedP2;
   selected=null; isDropMode=false;
-
-  // 恢復下一回合玩家
   currentPlayer = state.nextPlayer;
-
   renderBoard();
 }
 
@@ -223,7 +220,7 @@ board.addEventListener("click",e=>{
       if(target.type === "J"){
         alert(`玩家${currentPlayer}獲勝!`);
       }
-      addCaptured({...target});
+      addCaptured({...target, player: currentPlayer}); // 捕獲棋歸當前玩家
     }
 
     boardState[r][c] = selected;
