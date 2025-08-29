@@ -50,16 +50,12 @@ button {
   font-size:18px; border-radius:8px; position:relative;
 }
 .piece {
-  position:absolute; width:90%; height:90%;
-  display:flex; justify-content:center; align-items:center;
+  width:100%; height:100%; display:flex; justify-content:center; align-items:center;
   border-radius:8px; font-weight:bold; cursor:pointer;
-  transition: transform 0.3s ease-in-out;
 }
 .p1 { background:#ff9999; } .p2 { background:#9999ff; }
 .inactive { opacity:0.4; } .highlight { outline:3px solid yellow; }
 #capturedP1, #capturedP2 { display:flex; flex-direction:column; gap:5px; }
-.promote { animation:promoteAnim 0.6s ease-out; }
-@keyframes promoteAnim {0%{transform:scale(1);background:gold;}50%{transform:scale(1.5);background:orange;}100%{transform:scale(1);}}
 
 @media (max-width:600px){
   .board-container { grid-template-columns:repeat(3,minmax(50px,70px)); grid-template-rows:repeat(4,minmax(50px,70px)); }
@@ -71,7 +67,6 @@ button {
 <body>
 <div id="topBar">
   <div id="visitorBadge">
-    <img src="https://visitor-badge.glitch.me/badge?page_id=JiangGray.12" alt="瀏覽人數">
   </div>
   <div id="turnIndicator">玩家1回合</div>
   <button id="undoBtn">悔棋</button>
@@ -123,7 +118,6 @@ function initBoard(){
 
 function renderBoard(){
   board.innerHTML="";
-  const cellSize=board.offsetWidth/cols;
   for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
       const cell=document.createElement("div");
@@ -135,7 +129,6 @@ function renderBoard(){
         div.className=`piece p${p.player}`;
         div.textContent=piecesDef[p.type].name;
         div.dataset.player=p.player; div.dataset.type=p.type;
-        div.style.transform=`translate(${c*cellSize}px,${r*cellSize}px)`;
         board.appendChild(div);
       }
     }
@@ -172,10 +165,6 @@ function showDropPositions(player){
 }
 
 function switchPlayer(){ currentPlayer=currentPlayer===1?2:1; clearHighlights(); selected=null; isDropMode=false; renderBoard(); }
-function movePieceAnim(pieceDiv,fromRow,fromCol,toRow,toCol){
-  const cellSize=board.offsetWidth/cols;
-  pieceDiv.style.transform=`translate(${toCol*cellSize}px,${toRow*cellSize}px)`;
-}
 
 board.addEventListener("click",e=>{
   const cell=e.target.closest(".cell"); if(!cell)return;
@@ -196,9 +185,6 @@ board.addEventListener("click",e=>{
     selected=piece;selected.row=r;selected.col=c;
     showMoves(r,c,piece);
   } else if(cell.classList.contains("highlight")){
-    const pieceDiv = document.querySelector(`.piece[data-player="${selected.player}"][data-type="${selected.type}"]`);
-    if(pieceDiv) movePieceAnim(pieceDiv, selected.row, selected.col, r, c);
-
     let target = boardState[r][c];
     if(target){
         if(target.type === "J"){
@@ -213,12 +199,6 @@ board.addEventListener("click",e=>{
     if(selected.type === "B"){
         if((selected.player===1 && r===0) || (selected.player===2 && r===rows-1)){
             boardState[r][c].type = "G";
-            setTimeout(()=>{
-                const promotedCell = document.querySelector(`.piece[data-player="${currentPlayer}"][data-type="G"]`);
-                if(promotedCell){
-                    promotedCell.classList.add("promote");
-                }
-            }, 50);
         }
     }
 
