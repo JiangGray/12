@@ -1,228 +1,199 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>動物將棋</title>
-  <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: #fcefe4;
-      font-family: Arial, sans-serif;
-    }
-    h2 {
-      margin: 5px;
-    }
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 80px);
-      grid-template-rows: repeat(4, 80px);
-      gap: 2px;
-      background: #444;
-      margin: 10px 0;
-      touch-action: manipulation;
-    }
-    .cell {
-      width: 80px;
-      height: 80px;
-      background: #fff5d7;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .cell.highlight {
-      background: #90ee90;
-    }
-    .piece {
-      width: 60px;
-      height: 60px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      user-select: none;
-      transition: transform 0.3s;
-    }
-    .p1 { background: #ff9999; }
-    .p2 { background: #9999ff; }
-    .captured-zone {
-      display: flex;
-      gap: 5px;
-      min-height: 70px;
-      margin: 5px;
-      padding: 5px;
-      border: 2px dashed #666;
-      border-radius: 10px;
-      background: #fafafa;
-    }
-    .captured-zone .piece {
-      cursor: grab;
-    }
-    @media (max-width: 600px) {
-      .board {
-        grid-template-columns: repeat(3, 60px);
-        grid-template-rows: repeat(4, 60px);
-      }
-      .cell { width: 60px; height: 60px; }
-      .piece { width: 45px; height: 45px; font-size: 20px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<title>迷你象棋（動物將棋規則）</title>
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-family: sans-serif;
+    background: #f5f5dc;
+  }
+  h2 { margin:5px; }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    grid-template-rows: repeat(4, 80px);
+    gap: 2px;
+    background: #444;
+    margin: 10px 0;
+  }
+  .cell {
+    width:80px;
+    height:80px;
+    background: #fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:28px;
+    cursor:pointer;
+    transition: background 0.3s;
+  }
+  .cell.highlight { background:#90ee90; }
+  .piece {
+    width:60px;
+    height:60px;
+    border-radius:10px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-weight:bold;
+    user-select:none;
+    transition: transform 0.3s;
+  }
+  .p1{background:#ff9999;}
+  .p2{background:#9999ff;}
+  .captured-zone {
+    display:flex;
+    gap:5px;
+    min-height:50px;
+    margin:5px;
+    padding:5px;
+    border:2px dashed #666;
+    border-radius:10px;
+    background:#fafafa;
+  }
+  .captured-zone .piece{cursor:grab;}
+  @media(max-width:600px){
+    .board{grid-template-columns:repeat(3,60px);grid-template-rows:repeat(4,60px);}
+    .cell{width:60px;height:60px;}
+    .piece{width:45px;height:45px;font-size:20px;}
+  }
+</style>
 </head>
 <body>
-  <h2>玩家2 持駒區</h2>
-  <div id="capturedP2" class="captured-zone"></div>
+<h2>玩家2 持駒區</h2>
+<div id="capturedP2" class="captured-zone"></div>
 
-  <div class="board" id="board"></div>
+<div class="board" id="board"></div>
 
-  <h2>玩家1 持駒區</h2>
-  <div id="capturedP1" class="captured-zone"></div>
+<h2>玩家1 持駒區</h2>
+<div id="capturedP1" class="captured-zone"></div>
 
-  <script>
-    const board = document.getElementById("board");
-    const capturedP1 = document.getElementById("capturedP1");
-    const capturedP2 = document.getElementById("capturedP2");
+<script>
+const board=document.getElementById("board");
+const capturedP1=document.getElementById("capturedP1");
+const capturedP2=document.getElementById("capturedP2");
 
-    const rows = 4, cols = 3;
-    let currentPlayer = 1;
-    let selected = null;
-    let isDropMode = false; // 是否是放棋模式
+const rows=4,cols=3;
+let currentPlayer=1;
+let selected=null;
+let isDropMode=false;
 
-    // 棋子定義
-    const pieces = {
-      L: { name: "獅", moves: [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]] },
-      E: { name: "象", moves: [[1,1],[1,-1],[-1,1],[-1,-1]] },
-      G: { name: "長", moves: [[1,0],[-1,0],[0,1],[0,-1]] },
-      C: { name: "雞", moves: [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1]] }
-    };
+const piecesDef={
+  J:{name:"將",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]},
+  C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
+  X:{name:"象",moves:[[1,1],[1,-1],[-1,1],[-1,-1]]},
+  B:{name:"兵",moves:[[1,0]]}
+};
 
-    let boardState = Array(rows).fill(null).map(()=>Array(cols).fill(null));
+let boardState=Array(rows).fill(null).map(()=>Array(cols).fill(null));
 
-    function initBoard() {
-      // 玩家1 (下)
-      boardState[3][1] = {player:1,type:"L"};
-      boardState[2][0] = {player:1,type:"E"};
-      boardState[2][2] = {player:1,type:"G"};
-      boardState[2][1] = {player:1,type:"C"};
+function initBoard(){
+  // 玩家1(下)
+  boardState[3][0]={player:1,type:"C"};
+  boardState[3][1]={player:1,type:"J"};
+  boardState[3][2]={player:1,type:"C"};
+  boardState[2][0]={player:1,type:"X"};
+  boardState[2][1]={player:1,type:"B"};
+  boardState[2][2]={player:1,type:"X"};
+  // 玩家2(上)
+  boardState[0][0]={player:2,type:"C"};
+  boardState[0][1]={player:2,type:"J"};
+  boardState[0][2]={player:2,type:"C"};
+  boardState[1][0]={player:2,type:"X"};
+  boardState[1][1]={player:2,type:"B"};
+  boardState[1][2]={player:2,type:"X"};
+}
 
-      // 玩家2 (上)
-      boardState[0][1] = {player:2,type:"L"};
-      boardState[1][0] = {player:2,type:"G"};
-      boardState[1][2] = {player:2,type:"E"};
-      boardState[1][1] = {player:2,type:"C"};
-    }
-
-    function renderBoard() {
-      board.innerHTML = "";
-      for (let r=0;r<rows;r++) {
-        for (let c=0;c<cols;c++) {
-          const cell = document.createElement("div");
-          cell.className = "cell";
-          cell.dataset.row = r;
-          cell.dataset.col = c;
-          let piece = boardState[r][c];
-          if (piece) {
-            const div = document.createElement("div");
-            div.className = `piece p${piece.player}`;
-            div.textContent = pieces[piece.type].name;
-            div.dataset.player = piece.player;
-            div.dataset.type = piece.type;
-            cell.appendChild(div);
-          }
-          board.appendChild(cell);
-        }
+function renderBoard(){
+  board.innerHTML="";
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const cell=document.createElement("div");
+      cell.className="cell";
+      cell.dataset.row=r;
+      cell.dataset.col=c;
+      let p=boardState[r][c];
+      if(p){
+        const div=document.createElement("div");
+        div.className=`piece p${p.player}`;
+        div.textContent=piecesDef[p.type].name;
+        div.dataset.player=p.player;
+        div.dataset.type=p.type;
+        cell.appendChild(div);
       }
+      board.appendChild(cell);
     }
+  }
+}
 
-    function clearHighlights() {
-      document.querySelectorAll(".cell").forEach(c=>c.classList.remove("highlight"));
+function clearHighlights(){document.querySelectorAll(".cell").forEach(c=>c.classList.remove("highlight"));}
+
+function showMoves(r,c,piece){
+  clearHighlights();
+  let dirs=piecesDef[piece.type].moves;
+  dirs.forEach(([dr,dc])=>{
+    let nr=piece.player===1?r-dr:r+dr;
+    let nc=c+dc;
+    if(nr>=0 && nr<rows && nc>=0 && nc<cols){
+      let t=boardState[nr][nc];
+      if(!t||t.player!==piece.player)document.querySelector(`.cell[data-row="${nr}"][data-col="${nc}"]`).classList.add("highlight");
     }
+  });
+}
 
-    function showMoves(r,c,piece) {
-      clearHighlights();
-      let dirs = pieces[piece.type].moves;
-      dirs.forEach(([dr,dc])=>{
-        let nr = piece.player===1 ? r-dr : r+dr;
-        let nc = c+dc;
-        if(nr>=0 && nr<rows && nc>=0 && nc<cols) {
-          let target = boardState[nr][nc];
-          if(!target || target.player!==piece.player) {
-            document.querySelector(`.cell[data-row="${nr}"][data-col="${nc}"]`).classList.add("highlight");
-          }
-        }
-      });
+function switchPlayer(){currentPlayer=currentPlayer===1?2:1;clearHighlights();selected=null;isDropMode=false;}
+
+board.addEventListener("click",e=>{
+  const cell=e.target.closest(".cell");
+  if(!cell)return;
+  let r=+cell.dataset.row,c=+cell.dataset.col;
+  
+  if(isDropMode && !boardState[r][c]){
+    if((currentPlayer===1 && r>=2)||(currentPlayer===2 && r<=1)){
+      boardState[r][c]={player:currentPlayer,type:selected.type};
+      selected.element.remove();
+      switchPlayer();
+      renderBoard();
     }
+    return;
+  }
 
-    function switchPlayer() {
-      currentPlayer = currentPlayer===1?2:1;
-      clearHighlights();
-      selected = null;
-      isDropMode = false;
+  let piece=boardState[r][c];
+  if(piece && piece.player===currentPlayer){
+    selected=piece;selected.row=r;selected.col=c;
+    showMoves(r,c,piece);
+  } else if(cell.classList.contains("highlight")){
+    let target=boardState[r][c];
+    if(target){
+      if(target.type==="J"){alert(`玩家${currentPlayer}獲勝!`);}
+      addCaptured({...target,player:currentPlayer});
     }
-
-    // 點擊棋盤
-    board.addEventListener("click", e=>{
-      const cell = e.target.closest(".cell");
-      if(!cell) return;
-      let r = +cell.dataset.row, c = +cell.dataset.col;
-
-      if (isDropMode && !boardState[r][c]) {
-        // 放棋，限制只能在自己兩排
-        if ((currentPlayer===1 && r>=2) || (currentPlayer===2 && r<=1)) {
-          boardState[r][c] = {...selected};
-          selected.element.remove(); // 從持駒區刪除
-          switchPlayer();
-          renderBoard();
-        }
-        return;
-      }
-
-      let piece = boardState[r][c];
-      if (piece && piece.player===currentPlayer) {
-        selected = piece;
-        selected.row = r;
-        selected.col = c;
-        showMoves(r,c,piece);
-      } else if (cell.classList.contains("highlight")) {
-        // 移動
-        let target = boardState[r][c];
-        if (target) {
-          // 被吃掉 -> 加到持駒區
-          let captured = {...target, player: currentPlayer};
-          addCaptured(captured);
-        }
-        boardState[r][c] = selected;
-        boardState[selected.row][selected.col] = null;
-        switchPlayer();
-        renderBoard();
-      }
-    });
-
-    function addCaptured(piece) {
-      const div = document.createElement("div");
-      div.className = `piece p${piece.player}`;
-      div.textContent = pieces[piece.type].name;
-      div.dataset.player = piece.player;
-      div.dataset.type = piece.type;
-      div.onclick = ()=>{
-        if (piece.player===currentPlayer) {
-          selected = {player:piece.player,type:piece.type,element:div};
-          isDropMode = true;
-        }
-      };
-      if (piece.player===1) capturedP1.appendChild(div);
-      else capturedP2.appendChild(div);
-    }
-
-    initBoard();
+    boardState[r][c]=selected;
+    boardState[selected.row][selected.col]=null;
+    switchPlayer();
     renderBoard();
-  </script>
+  }
+});
+
+function addCaptured(piece){
+  const div=document.createElement("div");
+  div.className=`piece p${piece.player}`;
+  div.textContent=piecesDef[piece.type].name;
+  div.dataset.player=piece.player;
+  div.dataset.type=piece.type;
+  div.onclick=()=>{
+    if(piece.player===currentPlayer){selected={player:piece.player,type:piece.type,element:div};isDropMode=true;}
+  };
+  if(piece.player===1)capturedP1.appendChild(div); else capturedP2.appendChild(div);
+}
+
+initBoard();renderBoard();
+</script>
 </body>
 </html>
