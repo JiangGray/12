@@ -117,7 +117,6 @@ const piecesDef={
 };
 let boardState,history=[];
 
-// cloneState 儲存下一回合玩家
 function cloneState(){ 
   return { 
     board: JSON.parse(JSON.stringify(boardState)), 
@@ -127,12 +126,31 @@ function cloneState(){
   }; 
 }
 
+function bindCapturedEvents(container){
+  container.querySelectorAll(".piece").forEach(div=>{
+    div.onclick = ()=>{
+      const player = parseInt(div.dataset.player);
+      if(player === currentPlayer){
+        selected = {player, type: div.dataset.type, element: div};
+        isDropMode = true;
+        showDropPositions(currentPlayer);
+      }
+    }
+  });
+}
+
 function restoreState(state){
-  boardState=JSON.parse(JSON.stringify(state.board));
-  capturedP1.innerHTML=state.capturedP1;
-  capturedP2.innerHTML=state.capturedP2;
-  selected=null; isDropMode=false;
+  boardState = JSON.parse(JSON.stringify(state.board));
+  capturedP1.innerHTML = state.capturedP1;
+  capturedP2.innerHTML = state.capturedP2;
+  selected = null;
+  isDropMode = false;
   currentPlayer = state.nextPlayer;
+
+  // 重新綁定捕獲棋事件
+  bindCapturedEvents(capturedP1);
+  bindCapturedEvents(capturedP2);
+
   renderBoard();
 }
 
@@ -254,7 +272,7 @@ function addCaptured(piece){
   else capturedP2.appendChild(div);
 }
 
-resetBtn.onclick = ()=>{ initBoard(); renderBoard(); };
+resetBtn.onclick = ()=>{ initBoard(); renderBoard(); bindCapturedEvents(capturedP1); bindCapturedEvents(capturedP2); };
 undoBtn.onclick = ()=>{
   if(history.length>1){
     history.pop();
@@ -264,6 +282,8 @@ undoBtn.onclick = ()=>{
 
 initBoard();
 renderBoard();
+bindCapturedEvents(capturedP1);
+bindCapturedEvents(capturedP2);
 </script>
 </body>
 </html>
