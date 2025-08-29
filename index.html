@@ -55,9 +55,14 @@ button {
   width:90%; height:90%; display:flex; justify-content:center; align-items:center;
   border-radius:8px; font-weight:bold; cursor:pointer;
   user-select:none;
+  box-shadow: none;   /* 移除陰影 */
+  outline: none;      /* 移除 outline */
 }
 .p1 { background:#ff9999; } .p2 { background:#9999ff; }
-.highlight { outline:3px solid yellow; }
+.highlight {
+  outline: none;          /* 不要黃色外框 */
+  border: 2px solid yellow;  /* 改成平面邊框高亮 */
+}
 #capturedP1, #capturedP2 { display:flex; flex-direction:column; gap:5px; }
 
 @media (max-width:600px){
