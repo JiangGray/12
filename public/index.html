@@ -5,42 +5,11 @@
 <title>線上動物棋</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body {
-  font-family: Arial, sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px;
-}
-#lobby, #gameArea {
-  width: 90%;
-  max-width: 600px;
-  margin-top: 20px;
-}
-#tablesList li {
-  margin: 5px 0;
-}
-.board {
-  display: grid;
-  grid-template-columns: repeat(3, 80px);
-  grid-template-rows: repeat(4, 80px);
-  gap: 2px;
-  margin-top: 20px;
-}
-.cell {
-  width: 80px;
-  height: 80px;
-  background: #f0d9b5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  cursor: pointer;
-  border: 1px solid #999;
-}
-.highlight {
-  background: yellow !important;
-}
+body { font-family: Arial; display: flex; flex-direction: column; align-items: center; padding: 10px;}
+#lobby, #gameArea { width: 90%; max-width: 600px; margin-top: 20px;}
+#tablesList li { margin: 5px 0; }
+.board { display:grid; grid-template-columns:repeat(3,80px); grid-template-rows:repeat(4,80px); gap:2px; margin-top:20px;}
+.cell { width:80px;height:80px; display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer; border:1px solid #999; }
 .p1 { background:#ff9999; }
 .p2 { background:#9999ff; }
 </style>
@@ -48,16 +17,14 @@ body {
 <body>
 <h1>🐯 線上動物棋</h1>
 
-<!-- 大廳 -->
 <div id="lobby">
   <h2>遊戲大廳</h2>
   <input id="tableIdInput" placeholder="桌子名稱">
   <button onclick="createTable()">建立桌子</button>
-  <h3>可加入的桌子：</h3>
+  <h3>可加入桌子：</h3>
   <ul id="tablesList"></ul>
 </div>
 
-<!-- 遊戲區 -->
 <div id="gameArea" style="display:none;">
   <h2 id="tableTitle"></h2>
   <div id="capturedP1"></div>
@@ -67,55 +34,65 @@ body {
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ====== Socket.IO ======
 const socket = io();
-let myPlayerNum = null;
-let currentTable = null;
-let boardState = [];
-let currentPlayer = 1;
-let selected = null;
-let isDropMode = false;
-let capturedP1 = [];
-let capturedP2 = [];
+let myPlayerNum=null;
+let currentTable=null;
+let boardState=[];
+let currentPlayer=1;
+let selected=null;
+let isDropMode=false;
+let capturedP1=[];
+let capturedP2=[];
 
-socket.on("lobbyUpdate", tables => {
+// 建立桌子
+function createTable(){
+  const tableId = document.getElementById("tableIdInput").value.trim();
+  if(!tableId) return;
+  socket.emit("createTable", tableId);
+}
+
+// 大廳更新
+socket.on("lobbyUpdate", tables=>{
   const list = document.getElementById("tablesList");
-  list.innerHTML = "";
-  tables.forEach(t => {
+  list.innerHTML="";
+  tables.forEach(t=>{
     const li = document.createElement("li");
-    li.textContent = "桌子: " + t + " ";
+    li.textContent = t + " ";
     const btn = document.createElement("button");
     btn.textContent = "加入";
-    btn.onclick = () => socket.emit("joinTable", t);
+    btn.onclick = ()=>socket.emit("joinTable", t);
     li.appendChild(btn);
     list.appendChild(li);
   });
 });
 
-socket.on("playerAssigned", ({ playerNum, tableId }) => {
-  myPlayerNum = playerNum;
-  currentTable = tableId;
-  alert(`你是玩家 ${playerNum} (桌子: ${tableId})`);
+// 分配玩家
+socket.on("playerAssigned", ({playerNum,tableId})=>{
+  myPlayerNum=playerNum;
+  currentTable=tableId;
+  alert(`你是玩家 ${playerNum}, 桌子 ${tableId}`);
 });
 
-socket.on("gameStart", ({ boardState: state, turn }) => {
-  document.getElementById("lobby").style.display = "none";
-  document.getElementById("gameArea").style.display = "block";
-  document.getElementById("tableTitle").innerText = `桌子: ${currentTable}`;
+// 開始遊戲
+socket.on("gameStart", ({boardState:state,turn})=>{
+  document.getElementById("lobby").style.display="none";
+  document.getElementById("gameArea").style.display="block";
+  document.getElementById("tableTitle").innerText=`桌子: ${currentTable}`;
   initBoard();
   renderBoard();
-  currentPlayer = turn;
-  if(state) boardState = state;
+  if(state) boardState=state;
+  currentPlayer=turn;
 });
 
-socket.on("updateState", ({ boardState: newState, turn }) => {
-  boardState = newState;
-  currentPlayer = turn;
+// 同步棋盤
+socket.on("updateState", ({boardState:newState, turn})=>{
+  boardState=newState;
+  currentPlayer=turn;
   renderBoard();
 });
 
-// ====== 棋盤與規則 ======
-const rows=4,cols=3;
+// ====== 棋盤邏輯 ======
+const rows=4, cols=3;
 const piecesDef={
   J:{name:"將",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]},
   C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
@@ -137,71 +114,4 @@ function renderBoard(){
   board.innerHTML="";
   for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
-      const cell=document.createElement("div");
-      cell.className="cell";
-      cell.dataset.row=r; cell.dataset.col=c;
-      const p=boardState[r][c];
-      if(p){
-        cell.textContent = piecesDef[p.type].name;
-        cell.classList.add(p.player===1?"p1":"p2");
-      }
-      cell.onclick = ()=>handleClick(r,c);
-      board.appendChild(cell);
-    }
-  }
-}
-
-function handleClick(r,c){
-  if(currentPlayer!==myPlayerNum) return;
-
-  if(isDropMode && !boardState[r][c]){
-    // 打入棋子
-    const dropPiece = myPlayerNum===1?capturedP1.pop():capturedP2.pop();
-    if(dropPiece){
-      boardState[r][c]=dropPiece;
-      isDropMode=false;
-      selected=null;
-      switchPlayer();
-    }
-    renderBoard();
-    return;
-  }
-
-  const piece=boardState[r][c];
-  if(selected && piece && piece.player!==currentPlayer){
-    // 吃子
-    addCaptured(piece);
-    boardState[r][c]=boardState[selected.row][selected.col];
-    boardState[selected.row][selected.col]=null;
-    selected=null;
-    switchPlayer();
-  } else if(selected && selected.row!=r || selected.col!=c){
-    // 移動
-    boardState[r][c]=boardState[selected.row][selected.col];
-    boardState[selected.row][selected.col]=null;
-    selected=null;
-    switchPlayer();
-  } else if(piece && piece.player===currentPlayer){
-    selected={row:r,col:c};
-  }
-  renderBoard();
-}
-
-function addCaptured(piece){
-  if(piece.type==="G") piece.type="B"; // 咪變兵
-  if(currentPlayer===1) capturedP1.push({...piece, player:1});
-  else capturedP2.push({...piece, player:2});
-}
-
-function switchPlayer(){
-  currentPlayer=currentPlayer===1?2:1;
-  renderBoard();
-  syncMove();
-}
-
-function syncMove(){
-  socket.emit("move",{tableId:currentTable,newState:boardState,nextTurn:currentPlayer});
-}
-</script>
-</body>
-</html>
+      const cell=document.createEleme

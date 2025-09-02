@@ -9,14 +9,14 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
 
-let tables = {}; // { tableId: { players: [], boardState: ... } }
+let tables = {}; // { tableId: { players: [], boardState: ..., turn: 1 } }
 
 io.on("connection", socket => {
-  console.log("New user connected:", socket.id);
+  console.log("玩家連線:", socket.id);
 
-  // 傳送大廳狀態
   socket.emit("lobbyUpdate", Object.keys(tables));
 
+  // 建立桌子
   socket.on("createTable", tableId => {
     if (!tables[tableId]) {
       tables[tableId] = { players: [], boardState: null, turn: 1 };
@@ -24,6 +24,7 @@ io.on("connection", socket => {
     }
   });
 
+  // 加入桌子
   socket.on("joinTable", tableId => {
     const table = tables[tableId];
     if (table && table.players.length < 2) {
@@ -32,12 +33,14 @@ io.on("connection", socket => {
       socket.emit("playerAssigned", { playerNum, tableId });
 
       if (table.players.length === 2) {
-        io.to(table.players[0]).emit("gameStart", { boardState: null, turn: 1 });
-        io.to(table.players[1]).emit("gameStart", { boardState: null, turn: 1 });
+        table.players.forEach(p => {
+          io.to(p).emit("gameStart", { boardState: null, turn: 1 });
+        });
       }
     }
   });
 
+  // 玩家同步棋盤
   socket.on("move", ({ tableId, newState, nextTurn }) => {
     const table = tables[tableId];
     if (table) {
@@ -49,18 +52,16 @@ io.on("connection", socket => {
     }
   });
 
+  // 玩家離線
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    console.log("玩家離線:", socket.id);
     for (const [id, table] of Object.entries(tables)) {
-      if (table.players.includes(socket.id)) {
-        delete tables[id];
-      }
+      table.players = table.players.filter(p => p !== socket.id);
+      if (table.players.length === 0) delete tables[id];
     }
     io.emit("lobbyUpdate", Object.keys(tables));
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log("Server running on port", PORT);
-});
+server.listen(PORT, () => console.log("伺服器運行在 http://localhost:" + PORT));
