@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>線上動物棋</title>
+<title>線上動物棋 CL3</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body { font-family: Arial; display: flex; flex-direction: column; align-items: center; padding: 10px;}
@@ -15,7 +15,7 @@ body { font-family: Arial; display: flex; flex-direction: column; align-items: c
 </style>
 </head>
 <body>
-<h1>🐯 線上動物棋</h1>
+<h1>🐯 線上動物棋 CL3</h1>
 
 <div id="lobby">
   <h2>遊戲大廳</h2>
@@ -27,9 +27,7 @@ body { font-family: Arial; display: flex; flex-direction: column; align-items: c
 
 <div id="gameArea" style="display:none;">
   <h2 id="tableTitle"></h2>
-  <div id="capturedP1"></div>
   <div class="board" id="board"></div>
-  <div id="capturedP2"></div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -40,18 +38,14 @@ let currentTable=null;
 let boardState=[];
 let currentPlayer=1;
 let selected=null;
-let isDropMode=false;
-let capturedP1=[];
-let capturedP2=[];
 
-// 建立桌子
+// ===== Lobby 功能 =====
 function createTable(){
   const tableId = document.getElementById("tableIdInput").value.trim();
   if(!tableId) return;
   socket.emit("createTable", tableId);
 }
 
-// 大廳更新
 socket.on("lobbyUpdate", tables=>{
   const list = document.getElementById("tablesList");
   list.innerHTML="";
@@ -66,39 +60,28 @@ socket.on("lobbyUpdate", tables=>{
   });
 });
 
-// 分配玩家
 socket.on("playerAssigned", ({playerNum,tableId})=>{
   myPlayerNum=playerNum;
   currentTable=tableId;
   alert(`你是玩家 ${playerNum}, 桌子 ${tableId}`);
 });
 
-// 開始遊戲
 socket.on("gameStart", ({boardState:state,turn})=>{
   document.getElementById("lobby").style.display="none";
   document.getElementById("gameArea").style.display="block";
   document.getElementById("tableTitle").innerText=`桌子: ${currentTable}`;
   initBoard();
   renderBoard();
-  if(state) boardState=state;
-  currentPlayer=turn;
 });
 
-// 同步棋盤
-socket.on("updateState", ({boardState:newState, turn})=>{
-  boardState=newState;
-  currentPlayer=turn;
-  renderBoard();
-});
-
-// ====== 棋盤邏輯 ======
+// ===== 棋盤邏輯 =====
 const rows=4, cols=3;
 const piecesDef={
-  J:{name:"將",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]},
-  C:{name:"車",moves:[[1,0],[-1,0],[0,1],[0,-1]]},
-  X:{name:"象",moves:[[1,1],[1,-1],[-1,1],[-1,-1]]},
-  B:{name:"兵",moves:[[1,0]]},
-  G:{name:"咪",moves:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1]]}
+  J:{name:"將"},
+  C:{name:"車"},
+  X:{name:"象"},
+  B:{name:"兵"},
+  G:{name:"咪"}
 };
 
 function initBoard(){
@@ -106,7 +89,7 @@ function initBoard(){
   boardState[0][0]={player:2,type:"C"}; boardState[0][1]={player:2,type:"J"}; boardState[0][2]={player:2,type:"X"};
   boardState[1][1]={player:2,type:"B"}; boardState[2][1]={player:1,type:"B"};
   boardState[3][0]={player:1,type:"X"}; boardState[3][1]={player:1,type:"J"}; boardState[3][2]={player:1,type:"C"};
-  capturedP1=[]; capturedP2=[]; selected=null; isDropMode=false;
+  selected=null;
 }
 
 function renderBoard(){
@@ -114,4 +97,23 @@ function renderBoard(){
   board.innerHTML="";
   for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
-      const cell=document.createEleme
+      const cell=document.createElement("div");
+      cell.className="cell";
+      cell.dataset.row=r; cell.dataset.col=c;
+      const p=boardState[r][c];
+      if(p){ cell.textContent=piecesDef[p.type].name; cell.classList.add(p.player===1?"p1":"p2"); }
+      cell.onclick=()=>handleClick(r,c);
+      board.appendChild(cell);
+    }
+  }
+}
+
+function handleClick(r,c){
+  if(currentPlayer!==myPlayerNum) return;
+  const piece=boardState[r][c];
+  if(selected && piece && piece.player!==currentPlayer){
+    boardState[r][c]=boardState[selected.row][selected.col];
+    boardState[selected.row][selected.col]=null;
+    selected=null; switchPlayer();
+  } else if(selected && (selected.row!=r||selected.col!=c)){
+    b
